@@ -1,7 +1,18 @@
 [package]
 name = "uniconv"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "A fast, accurate, and easy-to-use command-line unit converter supporting temperature and length conversions"
+readme = "README.md"
+homepage = "https://github.com/yourusername/uniconv"
+repository = "https://github.com/yourusername/uniconv"
+license = "MIT"
+keywords = ["cli", "converter", "units", "temperature", "length"]
+categories = ["command-line-utilities", "science"]
 
 [dependencies]
+anyhow = { version = "1.0.100", default-features = false}
 clap = { version = "4.5.50", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
