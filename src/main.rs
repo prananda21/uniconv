@@ -67,14 +67,7 @@ enum Commands {
 }
 
 fn format_number(value: f64) -> String {
-    if value.fract() == 0.0 && value.abs() < 1e15 {
-        format!("{}", value as i64)
-    } else {
-        format!("{:.6}", value)
-            .trim_end_matches('0')
-            .trim_end_matches('.')
-            .to_string()
-    }
+    format!("{}", value.floor() as i64)
 }
 
 fn validate_numeric_input(value: f64, context: &str) -> Result<()> {
