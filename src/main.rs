@@ -277,7 +277,7 @@ fn main() -> Result<()> {
             let conversion_result = convert_temperature(value, from.clone(), to.clone())
                 .with_context(|| {
                     format!(
-                        "Failed to convert {} {:?} to {:?}",
+                        "Failed to convert {} {} to {}",
                         format_number(value),
                         from,
                         to
@@ -285,7 +285,7 @@ fn main() -> Result<()> {
                 })?;
 
             println!(
-                "{} {:?} = {} {:?}",
+                "{} {} = {} {}",
                 format_number(value),
                 from,
                 format_number(conversion_result),
@@ -296,7 +296,7 @@ fn main() -> Result<()> {
             let conversion_result =
                 convert_length(value, from.clone(), to.clone()).with_context(|| {
                     format!(
-                        "Failed to convert {} {:?} to {:?}",
+                        "Failed to convert {} {} to {}",
                         format_number(value),
                         from,
                         to
@@ -304,7 +304,7 @@ fn main() -> Result<()> {
                 })?;
 
             println!(
-                "{} {:?} = {} {:?}",
+                "{} {} = {} {}",
                 format_number(value),
                 from,
                 format_number(conversion_result),
