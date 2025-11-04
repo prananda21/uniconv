@@ -12,13 +12,15 @@ use conv::{Degree, Length, LengthConverter, TemperatureConverter};
 #[command(version = "1.0")]
 #[command(long_about = r#"
 Examples:
-  Temperature conversion:
-    uniconv temperature --from celsius --to fahrenheit --value 25
+  Smart conversion (automatically detects unit type):
+    uniconv convert --from celsius --to fahrenheit --value 25
     uniconv convert --from c --to f --value 25
-
-  Length conversion:
-    uniconv length --from cm --to inch --value 188
+    uniconv convert --from cm --to inch --value 188
     uniconv convert --from centimeter --to miles --value 1000
+
+  Dedicated commands:
+    uniconv temperature --from celsius --to fahrenheit --value 25
+    uniconv length --from cm --to inch --value 188
 "#)]
 struct Cli {
     #[command(subcommand)]
