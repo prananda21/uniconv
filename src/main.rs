@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context, Result};
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Parser, Subcommand};
 
 mod conv;
 mod errors;
@@ -14,23 +14,15 @@ use conv::{Degree, Length, LengthConverter, TemperatureConverter};
 Examples:
   Temperature conversion:
     uniconv temperature --from celsius --to fahrenheit --value 25
-    uniconv convert --type degree --from c --to f --value 25
+    uniconv convert --from c --to f --value 25
 
   Length conversion:
     uniconv length --from cm --to inch --value 188
-    uniconv convert --type length --from centimeter --to miles --value 1000
+    uniconv convert --from centimeter --to miles --value 1000
 "#)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
-}
-
-#[derive(Debug, Clone, ValueEnum)]
-enum ConversionType {
-    #[value(help = "Temperature conversion (celsius, fahrenheit, kelvin)")]
-    Degree,
-    #[value(help = "Length conversion (centimeter, inch, kilometer, miles)")]
-    Length,
 }
 
 #[derive(Subcommand)]
@@ -53,10 +45,8 @@ enum Commands {
         #[arg(long, help = "Length value to convert")]
         value: f64,
     },
-    #[command(about = "Generic conversion with string-based unit names")]
+    #[command(about = "Convert between units (automatically detects unit type)")]
     Convert {
-        #[arg(long, help = "Type of conversion: degree or length")]
-        r#type: ConversionType,
         #[arg(long, help = "Source unit (e.g., 'celsius', 'cm', 'c', 'centimeter')")]
         from: String,
         #[arg(long, help = "Target unit (e.g., 'fahrenheit', 'inch', 'f', 'in')")]
@@ -67,7 +57,8 @@ enum Commands {
 }
 
 fn format_number(value: f64) -> String {
-    format!("{}", value.floor() as i64)
+    println!("{}", value);
+    format!("{}", value.round_ties_even() as i64)
 }
 
 fn validate_numeric_input(value: f64, context: &str) -> Result<()> {
@@ -262,6 +253,131 @@ fn parse_length_unit(unit: &str) -> Result<Length> {
     }
 }
 
+fn detect_and_convert(from: &str, to: &str, value: f64) -> Result<()> {
+    // First, try to parse both units as temperature units
+    let temp_from = parse_temperature_unit(from);
+    let temp_to = parse_temperature_unit(to);
+
+    if let (Ok(from_unit), Ok(to_unit)) = (temp_from, temp_to) {
+        // Both units are valid temperature units
+        let conversion_result = convert_temperature(value, from_unit.clone(), to_unit.clone())
+            .with_context(|| {
+                format!(
+                    "Failed to convert {} {} to {}",
+                    format_number(value),
+                    from_unit,
+                    to_unit
+                )
+            })?;
+
+        println!(
+            "{} {} = {} {}",
+            format_number(value),
+            from_unit,
+            format_number(conversion_result),
+            to_unit
+        );
+        return Ok(());
+    }
+
+    // If temperature parsing failed, try length units
+    let length_from = parse_length_unit(from);
+    let length_to = parse_length_unit(to);
+
+    if let (Ok(from_unit), Ok(to_unit)) = (length_from, length_to) {
+        // Both units are valid length units
+        let conversion_result = convert_length(value, from_unit.clone(), to_unit.clone())
+            .with_context(|| {
+                format!(
+                    "Failed to convert {} {} to {}",
+                    format_number(value),
+                    from_unit,
+                    to_unit
+                )
+            })?;
+
+        println!(
+            "{} {} = {} {}",
+            format_number(value),
+            from_unit,
+            format_number(conversion_result),
+            to_unit
+        );
+        return Ok(());
+    }
+
+    // If we get here, neither temperature nor length parsing worked for both units
+    // Check if it's a mixed unit type error
+    let temp_from_ok = parse_temperature_unit(from).is_ok();
+    let temp_to_ok = parse_temperature_unit(to).is_ok();
+    let length_from_ok = parse_length_unit(from).is_ok();
+    let length_to_ok = parse_length_unit(to).is_ok();
+
+    if (temp_from_ok && length_to_ok) || (length_from_ok && temp_to_ok) {
+        return Err(anyhow!(
+            "Cannot convert between different unit types. '{}' and '{}' are from different categories (temperature vs length).",
+            from, to
+        ));
+    }
+
+    // If both units are invalid, provide helpful error message
+    let mut error_msg = String::new();
+
+    if !temp_from_ok && !length_from_ok {
+        error_msg.push_str(&format!("Invalid source unit: '{}'\n", from));
+    }
+    if !temp_to_ok && !length_to_ok {
+        error_msg.push_str(&format!("Invalid target unit: '{}'\n", to));
+    }
+
+    error_msg.push_str("\nSupported units:\n");
+    error_msg.push_str("Temperature: celsius (c), fahrenheit (f), kelvin (k)\n");
+    error_msg.push_str("Length: centimeter (cm), inch (in), kilometer (km), miles (mi)\n");
+
+    // Try to provide suggestions
+    let temp_units = &["celsius", "c", "fahrenheit", "f", "kelvin", "k"];
+    let length_units = &[
+        "centimeter",
+        "cm",
+        "inch",
+        "in",
+        "kilometer",
+        "km",
+        "miles",
+        "mi",
+    ];
+
+    if !temp_from_ok && !length_from_ok {
+        if let Some(suggestion) = find_closest_match(from, temp_units) {
+            error_msg.push_str(&format!(
+                "\nDid you mean '{}' for the source unit?",
+                suggestion
+            ));
+        } else if let Some(suggestion) = find_closest_match(from, length_units) {
+            error_msg.push_str(&format!(
+                "\nDid you mean '{}' for the source unit?",
+                suggestion
+            ));
+        }
+    }
+
+    if !temp_to_ok && !length_to_ok {
+        if let Some(suggestion) = find_closest_match(to, temp_units) {
+            error_msg.push_str(&format!(
+                "\nDid you mean '{}' for the target unit?",
+                suggestion
+            ));
+        } else if let Some(suggestion) = find_closest_match(to, length_units) {
+            error_msg.push_str(&format!(
+                "\nDid you mean '{}' for the target unit?",
+                suggestion
+            ));
+        }
+    }
+
+    Err(anyhow!(error_msg))
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -304,61 +420,9 @@ fn main() -> Result<()> {
                 to
             );
         }
-        Commands::Convert {
-            r#type,
-            from,
-            to,
-            value,
-        } => match r#type {
-            ConversionType::Degree => {
-                let from_unit = parse_temperature_unit(&from)
-                    .with_context(|| format!("Error parsing source temperature unit"))?;
-                let to_unit = parse_temperature_unit(&to)
-                    .with_context(|| format!("Error parsing target temperature unit"))?;
-
-                let conversion_result = convert_temperature(value, from_unit, to_unit)
-                    .with_context(|| {
-                        format!(
-                            "Failed to convert {} {} to {}",
-                            format_number(value),
-                            from,
-                            to
-                        )
-                    })?;
-
-                println!(
-                    "{} {} = {} {}",
-                    format_number(value),
-                    from,
-                    format_number(conversion_result),
-                    to
-                );
-            }
-            ConversionType::Length => {
-                let from_unit = parse_length_unit(&from)
-                    .with_context(|| format!("Error parsing source length unit"))?;
-                let to_unit = parse_length_unit(&to)
-                    .with_context(|| format!("Error parsing target length unit"))?;
-
-                let conversion_result =
-                    convert_length(value, from_unit, to_unit).with_context(|| {
-                        format!(
-                            "Failed to convert {} {} to {}",
-                            format_number(value),
-                            from,
-                            to
-                        )
-                    })?;
-
-                println!(
-                    "{} {} = {} {}",
-                    format_number(value),
-                    from,
-                    format_number(conversion_result),
-                    to
-                );
-            }
-        },
+        Commands::Convert { from, to, value } => {
+            detect_and_convert(&from, &to, value)?;
+        }
     }
 
     Ok(())
