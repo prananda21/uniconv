@@ -3,18 +3,19 @@
 [![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A fast, accurate, and easy-to-use command-line unit converter built with Rust. UniConv supports temperature and length conversions with multiple input formats and comprehensive error handling.
+A fast, accurate, and easy-to-use command-line unit converter built with Rust. UniConv supports temperature and length conversions with automatic unit detection, multiple input formats, and comprehensive error handling.
 
 ## Features
 
-- 🌡️ **Temperature Conversion**: Celsius, Fahrenheit, and Kelvin
+- 🌡️ **Temperature Conversion**: Celsius, Fahrenheit, and Kelvin with proper symbols (°C, °F, K)
 - 📏 **Length Conversion**: Centimeters, Inches, Kilometers, and Miles
-- 🚀 **Multiple Command Formats**: Dedicated subcommands and generic converter
+- 🤖 **Automatic Unit Detection**: No need to specify conversion type - automatically detects temperature vs length
+- 🚀 **Multiple Command Formats**: Dedicated subcommands and intelligent generic converter
 - ✅ **Advanced Input Validation**: Prevents impossible values and detects edge cases
 - 🛡️ **Comprehensive Error Handling**: Validates NaN, infinity, and extreme values
 - 🎯 **Accurate Conversions**: High-precision formulas with overflow protection
 - 📝 **Short Unit Names**: Support for abbreviations (cm, in, km, mi, c, f, k)
-- 🔍 **Detailed Error Messages**: Clear guidance with suggested fixes
+- 🔍 **Intelligent Error Messages**: Clear guidance with suggested fixes and typo detection
 - 📖 **Built-in Help**: Comprehensive help system with examples
 - ⚡ **Robust Operation**: Graceful handling of all error conditions
 
@@ -50,14 +51,14 @@ cargo run -- --help
 ## Quick Start
 
 ```bash
-# Temperature conversion
+# Temperature conversion (automatically detected)
+./target/release/uniconv convert --from celsius --to fahrenheit --value 100
+
+# Length conversion (automatically detected)
+./target/release/uniconv convert --from centimeter --to inch --value 100
+
+# Or use dedicated commands
 ./target/release/uniconv temperature --from celsius --to fahrenheit --value 100
-
-# Length conversion
-./target/release/uniconv length --from centimeter --to inch --value 100
-
-# Generic conversion
-./target/release/uniconv convert --type degree --from celsius --to fahrenheit --value 100
 ```
 
 ## Usage
@@ -66,9 +67,35 @@ cargo run -- --help
 
 UniConv provides three ways to perform conversions:
 
-1. **Dedicated Temperature Command**
-2. **Dedicated Length Command**
-3. **Generic Convert Command**
+1. **Smart Convert Command** (Recommended) - Automatically detects unit type
+2. **Dedicated Temperature Command**
+3. **Dedicated Length Command**
+
+### Smart Convert Command (Recommended)
+
+The `convert` command automatically detects whether you're converting temperature or length units:
+
+```bash
+# No need to specify --type, just provide units!
+uniconv convert --from <UNIT> --to <UNIT> --value <NUMBER>
+```
+
+**Examples:**
+```bash
+# Temperature conversions (auto-detected)
+$ uniconv convert --from celsius --to fahrenheit --value 25
+25 °C = 77 °F
+
+$ uniconv convert --from c --to k --value 100
+100 °C = 373 K
+
+# Length conversions (auto-detected)
+$ uniconv convert --from cm --to inch --value 180
+180 cm = 71 in
+
+$ uniconv convert --from kilometers --to miles --value 42
+42 km = 26 mi
+```
 
 ### Temperature Conversions
 
@@ -76,8 +103,8 @@ UniConv provides three ways to perform conversions:
 # Using temperature subcommand
 uniconv temperature --from <UNIT> --to <UNIT> --value <NUMBER>
 
-# Using generic convert command
-uniconv convert --unit-type temperature --from <UNIT> --to <UNIT> --value <NUMBER>
+# Using smart convert command (recommended)
+uniconv convert --from <UNIT> --to <UNIT> --value <NUMBER>
 ```
 
 **Supported Temperature Units:**
@@ -88,17 +115,16 @@ uniconv convert --unit-type temperature --from <UNIT> --to <UNIT> --value <NUMBE
 **Examples:**
 ```bash
 # Boiling point of water
-$ uniconv temperature --from celsius --to fahrenheit --value 100
-100.000000 Celsius = 212.000000 Fahrenheit
+$ uniconv convert --from celsius --to fahrenheit --value 100
+100 °C = 212 °F
 
 # Absolute zero
-$ uniconv temperature --from kelvin --to celsius --value 0
-0.000000 Kelvin = -273.150000 Celsius
+$ uniconv convert --from kelvin --to celsius --value 0
+0 K = -273 °C
 
 # Room temperature (using abbreviations)
-$ uniconv convert --type degree --from c --to f --value 20
-20.000000 c = 68.000000 f
-
+$ uniconv convert --from c --to f --value 20
+20 °C = 68 °F
 ```
 
 ### Length Conversions
@@ -107,8 +133,8 @@ $ uniconv convert --type degree --from c --to f --value 20
 # Using length subcommand
 uniconv length --from <UNIT> --to <UNIT> --value <NUMBER>
 
-# Using generic convert command
-uniconv convert --unit-type length --from <UNIT> --to <UNIT> --value <NUMBER>
+# Using smart convert command (recommended)
+uniconv convert --from <UNIT> --to <UNIT> --value <NUMBER>
 ```
 
 **Supported Length Units:**
@@ -120,16 +146,16 @@ uniconv convert --unit-type length --from <UNIT> --to <UNIT> --value <NUMBER>
 **Examples:**
 ```bash
 # Convert height
-$ uniconv length --from centimeter --to inch --value 180
-180.00cm = 70.87in
+$ uniconv convert --from centimeter --to inch --value 180
+180 cm = 71 in
 
 # Convert distance
-$ uniconv length --from kilometer --to miles --value 42.195
-42.20km = 26.22mi
+$ uniconv convert --from kilometer --to miles --value 42.195
+42 km = 26 mi
 
 # Convert using abbreviations
-$ uniconv convert --unit-type length --from ft --to cm --value 6
-# Error: Invalid length unit: ft. Valid units are: centimeter, inch, kilometer, miles
+$ uniconv convert --from cm --to km --value 100000
+100000 cm = 1 km
 ```
 
 ### Help System
@@ -170,118 +196,119 @@ uniconv convert --help
 
 ## Error Handling
 
-UniConv validates all inputs and provides clear error messages:
+UniConv validates all inputs and provides intelligent error messages with automatic unit type detection:
+
+### Mixed Unit Type Detection
+```bash
+# Trying to convert between different unit types
+$ uniconv convert --from celsius --to kilometers --value 25
+Error: Cannot convert between different unit types.
+ 'celsius' and 'kilometers' are from different categories (temperature vs length).
+```
+
+### Invalid Unit Detection with Suggestions
+```bash
+# Typo in temperature unit
+$ uniconv convert --from celcius --to fahrenheit --value 25
+Error: Invalid source unit: 'celcius'
+
+Supported units:
+Temperature: celsius (c), fahrenheit (f), kelvin (k)
+Length: centimeter (cm), inch (in), kilometer (km), miles (mi)
+
+Did you mean 'celsius' for the source unit?
+
+# Invalid length unit
+$ uniconv convert --from meter --to inch --value 1
+Error: Invalid source unit: 'meter'
+
+Supported units:
+Temperature: celsius (c), fahrenheit (f), kelvin (k)
+Length: centimeter (cm), inch (in), kilometer (km), miles (mi)
+
+Did you mean 'centimeter' for the source unit?
+```
 
 ### Numeric Input Validation
 ```bash
 # NaN (Not a Number) detection
-$ uniconv temperature --from celsius --to fahrenheit --value nan
+$ uniconv convert --from celsius --to fahrenheit --value nan
 Error: Temperature value cannot be NaN (Not a Number)
 
 # Infinity detection
-$ uniconv temperature --from celsius --to fahrenheit --value inf
+$ uniconv convert --from celsius --to fahrenheit --value inf
 Error: Temperature value cannot be infinite
 
 # Extremely large numbers
-$ uniconv temperature --from celsius --to fahrenheit --value 1e16
+$ uniconv convert --from celsius --to fahrenheit --value 1e16
 Error: Temperature value is too large (absolute value exceeds 1e15). Please use a smaller number.
-
 ```
 
 ### Physical Constraint Validation
 #### Temperature Constraints
 ```bash
 # Below absolute zero in Kelvin
-$ uniconv temperature --from kelvin --to celsius --value -10
+$ uniconv convert --from kelvin --to celsius --value -10
 Error: Kelvin temperature cannot be negative (-10K). Minimum is 0 K (absolute zero).
 
 # Below absolute zero in Celsius
-$ uniconv temperature --from celsius --to fahrenheit --value -300
+$ uniconv convert --from celsius --to fahrenheit --value -300
 Error: Celsius temperature cannot be below absolute zero (-300°C < -273.15°C).
 
 # Below absolute zero in Fahrenheit
-$ uniconv temperature --from fahrenheit --to celsius --value -500
+$ uniconv convert --from fahrenheit --to celsius --value -500
 Error: Fahrenheit temperature cannot be below absolute zero (-500°F < -459.67°F).
-
-# Unrealistically high temperatures
-$ uniconv temperature --from celsius --to fahrenheit --value 1e11
-Error: Celsius temperature 1e+11°C is unrealistically high. Please check your input.
 ```
 
 #### Length Constraints
 ```bash
 # Negative length values
-$ uniconv length --from centimeter --to inch --value -10
+$ uniconv convert --from centimeter --to inch --value -10
 Error: Length cannot be negative (-10). Please provide a positive value.
 
 # Unrealistically large lengths
-$ uniconv length --from centimeter --to inch --value 1e13
+$ uniconv convert --from centimeter --to inch --value 1e13
 Error: Length value 1e+13 is unrealistically large. Please check your input.
-```
-
-
-### Unit Parsing Errors
-```bash
-# Invalid temperature unit with suggestions
-$ uniconv convert --type degree --from celsius --to kevlin --value 25
-Error: Invalid target temperature unit: 'kevlin'
-  Caused by: Invalid temperature unit: 'kevlin'. Valid units are:
-  - celsius, c, °c
-  - fahrenheit, f, °f
-  - kelvin, k
-
-# Invalid length unit with suggestions
-$ uniconv convert --type length --from meter --to inch --value 1
-Error: Invalid source length unit: 'meter'
-  Caused by: Invalid length unit: 'meter'. Valid units are:
-  - centimeter, centimeters, cm
-  - inch, inches, in
-  - kilometer, kilometers, km
-  - miles, mile, mi
-```
-
-### Conversion Error Handling
-The application also validate conversion results and handles edge cases:
-```bash
-# If a conversion somehow produces invalid results
-Error: Conversion produced invalid result: Conversion result cannot be NaN (Not a Number)
-Error: Failed to perform temperature conversion
-  Caused by: Celsius to Fahrenheit conversion resulted in infinity. Input value: 1e+308 Celsius
 ```
 
 ## Examples & Use Cases
 
-### Common Temperature Conversions
+### Smart Conversions (Recommended Usage)
 
 ```bash
 # Weather conversions
-uniconv temperature --from celsius --to fahrenheit --value 25    # Room temp
-uniconv temperature --from fahrenheit --to celsius --value 98.6  # Body temp
-uniconv temperature --from celsius --to kelvin --value 0         # Freezing point
+uniconv convert --from celsius --to fahrenheit --value 25    # 25 °C = 77 °F
+uniconv convert --from f --to c --value 98.6                 # 99 °F = 37 °C
+uniconv convert --from celsius --to kelvin --value 0         # 0 °C = 273 K
+
+# Height and distance conversions  
+uniconv convert --from cm --to inch --value 175             # 175 cm = 69 in
+uniconv convert --from kilometers --to miles --value 5       # 5 km = 3 mi
+uniconv convert --from miles --to km --value 26.2           # 26 mi = 42 km
 
 # Cooking temperatures
-uniconv temperature --from fahrenheit --to celsius --value 350   # Oven temp
-uniconv temperature --from celsius --to fahrenheit --value 100   # Boiling water
+uniconv convert --from f --to c --value 350                 # 350 °F = 177 °C
+uniconv convert --from celsius --to fahrenheit --value 100   # 100 °C = 212 °F
 
 # Scientific applications
-uniconv temperature --from kelvin --to celsius --value 300       # Lab conditions
-
+uniconv convert --from kelvin --to celsius --value 300       # 300 K = 27 °C
 ```
 
-### Common Length Conversions
+### Using Dedicated Commands
 
 ```bash
-# Height conversions
-uniconv length --from centimeter --to inch --value 175    # Person height
-uniconv length --from inch --to centimeter --value 72     # 6 feet in inches
-
-# Distance conversions
-uniconv length --from kilometer --to miles --value 5      # 5K run
-uniconv length --from miles --to kilometer --value 26.2   # Marathon distance
-
-# Precision measurements
-uniconv length --from centimeter --to inch --value 2.54   # Exact inch conversion
+# If you prefer explicit commands
+uniconv temperature --from celsius --to fahrenheit --value 25
+uniconv length --from centimeter --to inch --value 175
 ```
+
+## Key Advantages of Smart Convert
+
+1. **Simpler Commands**: No need to specify `--type degree` or `--type length`
+2. **Automatic Detection**: Intelligently determines unit type from context
+3. **Mixed Type Protection**: Prevents converting between incompatible units
+4. **Better Error Messages**: Suggests corrections for typos and invalid units
+5. **Proper Symbols**: Temperature outputs show proper symbols (°C, °F, K)
 
 ## Development
 
@@ -290,14 +317,16 @@ uniconv length --from centimeter --to inch --value 2.54   # Exact inch conversio
 ```
 uniconv/
 ├── src/
-│   ├── main.rs              # CLI interface and argument parsing
-│   └── conv/
-│       ├── mod.rs           # Module definitions and enums
-│       ├── temperature.rs   # Temperature conversion logic
-│       └── length.rs        # Length conversion logic
+│   ├── main.rs              # CLI interface with smart unit detection
+│   ├── conv/
+│   │   ├── mod.rs           # Unit enums and display formatting
+│   │   ├── temperature.rs   # Temperature conversion logic
+│   │   └── length.rs        # Length conversion logic
+│   └── errors/
+│       └── mod.rs           # Error handling modules
 ├── Cargo.toml              # Dependencies and project metadata
 ├── README.md               # This file
-└── USAGE.md               # Detailed usage examples
+└── CHANGELOG.md            # Version history
 ```
 
 ### Dependencies
@@ -315,32 +344,41 @@ cargo test
 # Run tests with output
 cargo test -- --nocapture
 
-# Run specific test module
+# Test specific functionality
 cargo test temperature
 cargo test length
+cargo test error_handling
 ```
+
+## Migration from Previous Versions
+
+If you were using the old format with `--type`, simply remove that parameter:
+
+```bash
+# Old format
+uniconv convert --type degree --from celsius --to fahrenheit --value 25
+uniconv convert --type length --from cm --to inch --value 100
+
+# New format (simpler!)
+uniconv convert --from celsius --to fahrenheit --value 25
+uniconv convert --from cm --to inch --value 100
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
 ## Acknowledgments
 
 - Built with ❤️ using [Rust](https://www.rust-lang.org/)
 - CLI parsing powered by [clap](https://github.com/clap-rs/clap)
-- Inspired by the need for a fast, accurate unit converter
+- Error handling enhanced with [anyhow](https://github.com/dtolnay/anyhow)
+- Inspired by the need for a fast, accurate, and intelligent unit converter
 
 ---
 
-**Made with 🦀 Rust** | **Fast • Accurate • Reliable**
-
-
-## Key Updates Made:
-
-1. **Enhanced Features Section**: Added emphasis on comprehensive error handling and robust operation
-2. **Updated Command Examples**: Changed `--unit-type` to `--type` to match your actual implementation
-3. **New Advanced Error Handling Section**: Comprehensive documentation of all error types with examples
-4. **Updated Conversion Formulas**: Corrected temperature conversion formulas to match your implementation
-5. **Enhanced Error Examples**: Real error messages that users will see
-6. **Updated Project Structure**: Added errors module documentation
-7. **Testing Section**: Added error condition testing
-8. **Roadmap Updates**: Added error handling improvements to future plans
-9. **Updated Acknowledgments**: Added anyhow credit for error handling
-
-The documentation now accurately reflects your enhanced error handling capabilities and provides users with clear examples of what to expect when things go wrong, making the tool more user-friendly and professional.
+**Made with 🦀 Rust** | **Fast • Accurate • Intelligent**

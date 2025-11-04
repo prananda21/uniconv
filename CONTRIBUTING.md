@@ -32,6 +32,9 @@ By participating in this project, you agree to maintain a respectful and inclusi
    
    # Run the application
    cargo run -- --help
+   
+   # Test the smart convert feature
+   cargo run -- convert --from celsius --to fahrenheit --value 25
    ```
 
 3. **Install Development Tools** (Optional but recommended)
@@ -88,7 +91,8 @@ git commit -m "Add volume conversion support
 
 - Implement liter/gallon/cubic meter conversions
 - Add VolumeConverter struct and tests
-- Update CLI to support volume subcommand"
+- Update CLI to support volume subcommand
+- Integrate with smart convert command for auto-detection"
 ```
 
 ### 5. Push and Create Pull Request
@@ -199,6 +203,7 @@ When adding a new unit type (e.g., Volume, Weight), follow this pattern:
    - Add CLI enum variant
    - Add conversion function
    - Update help text
+   - Add unit parsing to `detect_and_convert` function
 
 ### Testing Guidelines
 
@@ -236,6 +241,7 @@ When adding a new unit type (e.g., Volume, Weight), follow this pattern:
 - **Batch processing** from file input
 - **Custom units** with user-defined conversion factors
 - **Precision control** for output formatting
+- **Fuzzy unit matching** for better typo detection
 
 ### Infrastructure Improvements
 
@@ -270,6 +276,27 @@ Include:
 2. Code review by maintainers
 3. Address feedback and make revisions
 4. Final approval and merge
+
+## Command Examples for Testing
+
+When contributing, test your changes with these example commands:
+
+```bash
+# Smart convert (recommended usage)
+cargo run -- convert --from celsius --to fahrenheit --value 25
+cargo run -- convert --from c --to f --value 0
+cargo run -- convert --from cm --to inch --value 100
+cargo run -- convert --from kilometers --to miles --value 5
+
+# Test error handling
+cargo run -- convert --from celsius --to kilometers --value 25  # Mixed types
+cargo run -- convert --from celcius --to fahrenheit --value 25  # Typo
+cargo run -- convert --from meter --to inch --value 100         # Invalid unit
+
+# Dedicated commands (still supported)
+cargo run -- temperature --from celsius --to fahrenheit --value 25
+cargo run -- length --from cm --to inch --value 100
+```
 
 ## Getting Help
 
